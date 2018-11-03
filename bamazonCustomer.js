@@ -143,6 +143,7 @@ function updateInventory(results, response){
   console.log("Available Quantity = "+results[response.item-1].stock_quantity);
   console.log("Price = "+results[response.item-1].price);
   console.log("Item Name = "+results[response.item-1].product_name);
+  console.log("Product Sales = "+results[response.item-1].product_sales);
   var productName = results[response.item-1].product_name;
   var price = results[response.item-1].price;
   var userChoice = response.item;
@@ -150,13 +151,20 @@ function updateInventory(results, response){
   var stockQuantity = results[response.item-1].stock_quantity;
   var newQuantity;
   var cost =0; 
+  var productSales = results[response.item-1].product_sales; 
       if (userQuantity <= stockQuantity){
         //Update Database stock_quantity
         newQuantity = stockQuantity - userQuantity;
         //console.log("Update the quantity in products database.");
         cost = price*userQuantity;
+        if (productSales === null){
+          productSales = cost;
+        }
+        else
+          productSales = productSales+cost;
+          console.log("Product Sales = "+productSales);
         console.log(userQuantity +" "+productName+"'s at "+price+" = "+cost);
-        launchUpdate(userChoice, newQuantity)
+        launchUpdate(userChoice, newQuantity, productSales)
         //figure out bill and output to user
         //restart 
       }
@@ -170,17 +178,19 @@ function updateInventory(results, response){
       }
 }//updateInventory
 
-function launchUpdate(item, newQuantity){
+function launchUpdate(item, newQuantity, productSales){
+  var fieldsToUpdate =
+  {
+    stock_quantity: newQuantity,
+    product_sales: productSales
+  },
+  whereClause =
+  {
+    item_id: item
+  };
   connection.query(
     "UPDATE products SET ? WHERE ?",
-    [
-      {
-        stock_quantity: newQuantity
-      },
-      {
-        item_id: item
-      }
-    ],
+    [fieldsToUpdate, whereClause],
     function(error) {
       if (error) throw error;
 

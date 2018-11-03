@@ -52,7 +52,7 @@ function promptUser() {
     .prompt({
       name: "selection",
       type: "list",
-      message: "What data would you like to see?\n",
+      message: "What action would you like to perform?\n",
       choices: [
         "View Products for Sale",
         "View Low Inventory",
