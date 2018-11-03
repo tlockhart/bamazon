@@ -4,7 +4,7 @@
 var inquirer = require("inquirer");
 var mysql = require("mysql");
 var Table = require('cli-table');
-var displayCtr = 0;
+//var displayCtr = 0;
 
 /*****************************************************
  *  CONNECTION TO DATABASE
@@ -33,7 +33,7 @@ var connection = mysql.createConnection({
     //START PROGRAM
     /***************/
     //promptUser();
-    displayProducts();
+    quitContinue();
 
     /*****************
      * END CONNECTION
@@ -54,28 +54,28 @@ function displayProducts() {
 
     // instantiate cli-table
     var table = new Table({
-      head: ['ID', 'Product', 'Price']
-      , colWidths: [5, 35, 10]
+      head: ['ID', 'Product', 'Price', 'Quantity']
+      , colWidths: [5, 35, 10, 10]
     });
 
     // table is an Array, so you can `push`, `unshift`, `splice` and friends
     for (var i = 0; i < results.length; i++) {
       table.push(
-        [results[i].item_id, results[i].product_name, results[i].price]
+        [results[i].item_id, results[i].product_name, results[i].price, results[i].stock_quantity]
       );
     }
-    //If products table has not been displayed show it
-    if(displayCtr < 1){
+    //If products table has not been displayed show it1
+    //if(displayCtr < 1){
       console.log(table.toString());
-      displayCtr++;
-    }
+     // displayCtr++;
+    //}
     
     //promptUser(results);
-    var syntax = /^[A-Za-z]+$/;
+   // var syntax = /^[A-Za-z]+$/;
   inquirer.prompt([
       {
         name: "item",
-        message: "Enter an item ID to purchase?\n",
+        message: "\nEnter an item ID to purchase?\n",
         type: "number",
         validate: function(item){
           if(isNaN(item) === false && item > 0 && item < results.length){
@@ -89,7 +89,7 @@ function displayProducts() {
       },//prompt
       {
         name: "quantity",
-        message: "How many units would you like to purchase?\n",
+        message: "\nHow many units would you like to purchase?\n",
         type: "number",
         validate: function(quantity){
           //console.log("Item = "+item);
@@ -106,19 +106,37 @@ function displayProducts() {
       //Examines user input and sends a callback function in as an argument.
         //console.log("Name = "+response.name.toLowerCase());
         //processInput(response.name.toLowerCase(), promptUser);
-        testFunc(results, response);
+        updateInventory(results, response);
     });
-    //testFunc(results);
+    //updateInventory(results);
   });//query
 
 }//displayProducts
 
-//PROMPT USER FOR INPUT
-/*function promptUser(results){
-  
-}//promptUser*/
+function quitContinue() {
+  inquirer
+    .prompt({
+      name: "selection",
+      type: "list",
+      message: "Would you like to make a purchase?",
+      choices: [
+        "yes",
+        "no"]
+    })
+    .then(function (answer) {
+      switch (answer.selection) {
+        case "yes":
+          displayProducts();
+          break;
 
-function testFunc(results, response){
+        case "no":
+        process.exit(0);//0 means we are making a clean exit
+          break;
+      }
+    }); //then
+}//function
+
+function updateInventory(results, response){
   console.log("Item_ID = "+response.item);
   console.log("Quantity = "+response.quantity);
   //&& quantity <= results[item].stock_quantity
@@ -135,10 +153,10 @@ function testFunc(results, response){
       if (userQuantity <= stockQuantity){
         //Update Database stock_quantity
         newQuantity = stockQuantity - userQuantity;
-        console.log("Update the quantity in products database.");
+        //console.log("Update the quantity in products database.");
         cost = price*userQuantity;
         console.log(userQuantity +" "+productName+"'s at "+price+" = "+cost);
-        updateInventory(userChoice, newQuantity)
+        launchUpdate(userChoice, newQuantity)
         //figure out bill and output to user
         //restart 
       }
@@ -147,11 +165,12 @@ function testFunc(results, response){
         //Let user know not enough in stock
         //Show products table and then loop back from start.
         console.log("Quantity is not in stock.");
-        displayProducts();
+        //displayProducts();
+        quitContinue();
       }
-}//testFunc
+}//updateInventory
 
-function updateInventory(item, newQuantity){
+function launchUpdate(item, newQuantity){
   connection.query(
     "UPDATE products SET ? WHERE ?",
     [
@@ -165,10 +184,11 @@ function updateInventory(item, newQuantity){
     function(error) {
       if (error) throw error;
 
-      console.log("Inventory Updated successfully!");
+      console.log("\nInventory Updated successfully!\n");
       //reset displayCtr after transaction is complete
-      displayCtr = 0;
+      //displayCtr = 0;
       //displayProducts();
+      quitContinue();
     }
   );
 }//updateInventery
