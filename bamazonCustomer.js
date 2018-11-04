@@ -4,7 +4,7 @@
 var inquirer = require("inquirer");
 var mysql = require("mysql");
 var Table = require('cli-table');
-//var displayCtr = 0;
+var decimalPlaces = 2;
 
 /*****************************************************
  *  CONNECTION TO DATABASE
@@ -33,12 +33,12 @@ var connection = mysql.createConnection({
     //START PROGRAM
     /***************/
     //promptUser();
-    quitContinue();
+    quitContinuePrompt();
 
     /*****************
      * END CONNECTION
      *****************/
-    ///DEPENDENT ON USR RESPONSE:
+    ///CONNECTION ENDS WHEN USER QUITS:
     //connection.end();
     //process.exit(0);//0 means we are making a clean exit
     /************************/
@@ -46,7 +46,6 @@ var connection = mysql.createConnection({
 
   /*********************************************/
 function displayProducts() {
-  //var table;
   // query the database for all items being auctioned
   connection.query("SELECT * FROM products", function (err, results) {
     if (err) throw err;
@@ -61,59 +60,48 @@ function displayProducts() {
     // table is an Array, so you can `push`, `unshift`, `splice` and friends
     for (var i = 0; i < results.length; i++) {
       table.push(
-        [results[i].item_id, results[i].product_name, results[i].price, results[i].stock_quantity]
+        [results[i].item_id, results[i].product_name, results[i].price.toFixed(decimalPlaces), results[i].stock_quantity]
       );
-    }
-    //If products table has not been displayed show it1
-    //if(displayCtr < 1){
+    }//for
+
       console.log(table.toString());
-     // displayCtr++;
-    //}
-    
-    //promptUser(results);
-   // var syntax = /^[A-Za-z]+$/;
+      console.log();
+
   inquirer.prompt([
       {
         name: "item",
-        message: "\nEnter an item ID to purchase?\n",
+        message: "Enter an item ID to purchase?\n",
         type: "number",
         validate: function(item){
-          if(isNaN(item) === false && item > 0 && item < results.length){
+          if(isNaN(item) === false && item > 0 && item <= results[results.length-1].item_id && Number.isInteger(item)){
               return true;
           }
           else{
-            //console.log("Item ID not found, please try again.");
               return false;
           }//else
         }//validate
       },//prompt
       {
         name: "quantity",
-        message: "\nHow many units would you like to purchase?\n",
+        message: "How many units would you like to purchase?\n",
         type: "number",
         validate: function(quantity){
-          //console.log("Item = "+item);
-          if(isNaN(quantity) === false && quantity >0){
+          if(isNaN(quantity) === false && quantity > 0 && Number.isInteger(quantity)){
               return true;
           }
           else{
-            //console.log("Quantity not available in stock, please try again.");
               return false;
           }//else
         }
       }
     ]).then(function(response) {
-      //Examines user input and sends a callback function in as an argument.
-        //console.log("Name = "+response.name.toLowerCase());
-        //processInput(response.name.toLowerCase(), promptUser);
+      //Update Inventory send query results and inquirer response as arguments
         updateInventory(results, response);
-    });
-    //updateInventory(results);
+    });//updateInventory(results);
   });//query
-
 }//displayProducts
 
-function quitContinue() {
+function quitContinuePrompt() {
   inquirer
     .prompt({
       name: "selection",
@@ -130,52 +118,55 @@ function quitContinue() {
           break;
 
         case "no":
-        process.exit(0);//0 means we are making a clean exit
+          process.exit(0);//0 means we are making a clean exit
           break;
-      }
+      }//switch
     }); //then
 }//function
 
-function updateInventory(results, response){
-  console.log("Item_ID = "+response.item);
-  console.log("Quantity = "+response.quantity);
-  //&& quantity <= results[item].stock_quantity
-  console.log("Available Quantity = "+results[response.item-1].stock_quantity);
-  console.log("Price = "+results[response.item-1].price);
-  console.log("Item Name = "+results[response.item-1].product_name);
-  console.log("Product Sales = "+results[response.item-1].product_sales);
-  var productName = results[response.item-1].product_name;
-  var price = results[response.item-1].price;
+function updateInventory(results, response) {
   var userChoice = response.item;
   var userQuantity = response.quantity;
-  var stockQuantity = results[response.item-1].stock_quantity;
+  var price;
+  var productName;
   var newQuantity;
-  var cost =0; 
-  var productSales = results[response.item-1].product_sales; 
-      if (userQuantity <= stockQuantity){
-        //Update Database stock_quantity
-        newQuantity = stockQuantity - userQuantity;
-        //console.log("Update the quantity in products database.");
-        cost = price*userQuantity;
-        if (productSales === null){
-          productSales = cost;
-        }
-        else
-          productSales = productSales+cost;
-          console.log("Product Sales = "+productSales);
-        console.log(userQuantity +" "+productName+"'s at "+price+" = "+cost);
-        launchUpdate(userChoice, newQuantity, productSales)
-        //figure out bill and output to user
-        //restart 
-      }
-      else
-      {
-        //Let user know not enough in stock
-        //Show products table and then loop back from start.
-        console.log("Quantity is not in stock.");
-        //displayProducts();
-        quitContinue();
-      }
+  var stockQuantity;
+  var productSales;
+  var cost = 0;
+  var productFound = false;
+  for (var i = 0; i < results.length; i++) {
+    if (results[i].item_id === response.item) {
+      stockQuantity = results[i].stock_quantity;
+      productSales = results[i].product_sales;
+      productName = results[i].product_name;
+      price = results[i].price;
+      productFound = true;
+    }
+  }//for
+  if (userQuantity <= stockQuantity) {
+    //Update Database stock_quantity
+    newQuantity = stockQuantity - userQuantity;
+    cost = price * userQuantity;
+    if (productSales === null) {
+      productSales = cost;
+    }
+    else
+      productSales = productSales + cost;
+    if(productFound){
+      //Figure out bill and output to customer
+      console.log(userQuantity + " " + productName + "/s at $" + price.toFixed(decimalPlaces) + "; Total Cost: $" + cost.toFixed(decimalPlaces));
+      launchUpdate(userChoice, newQuantity, productSales)
+    }
+    else{
+      console.log("\nItem not found.\n")
+      quitContinuePrompt();
+    }
+  }
+  else {
+    //Let user know not enough in stock
+    console.log("\nQuantity is not in stock.\n");
+    quitContinuePrompt();
+  }
 }//updateInventory
 
 function launchUpdate(item, newQuantity, productSales){
@@ -194,14 +185,11 @@ function launchUpdate(item, newQuantity, productSales){
     function(error) {
       if (error) throw error;
 
-      console.log("\nInventory Updated successfully!\n");
-      //reset displayCtr after transaction is complete
-      //displayCtr = 0;
-      //displayProducts();
-      quitContinue();
+      console.log("\nProduct/s purchased successfully!\n");
+      quitContinuePrompt();
     }
   );
-}//updateInventery
+}//updateInventory
 /*****************************************************
  *  RUN PROGRAMS
  ****************************************************/

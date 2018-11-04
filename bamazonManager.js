@@ -3,11 +3,9 @@
  ****************************************************/
 var inquirer = require("inquirer");
 var mysql = require("mysql");
-//var Table = require('cli-table');
 
-// call once somewhere in the beginning of the app
 const cTable = require('console.table');
-//var displayCtr = 0;
+var decimalPlaces = 2;
 
 /*****************************************************
  *  CONNECTION TO DATABASE
@@ -36,12 +34,11 @@ connection.connect(function (err) {
   //START PROGRAM
   /***************/
   promptUser();
-  //displaySongs();
 
   /*****************
    * END CONNECTION
    *****************/
-  ///DEPENDENT ON USR RESPONSE:
+  ///PROGRAM ENDS WHEN USER SELECTS QUIT
   //connection.end();
   //process.exit(0);//0 means we are making a clean exit
   /************************/
@@ -75,7 +72,7 @@ function promptUser() {
           break;
 
         case "Add New Product":
-          addRecordPrompt();
+          getDepartmentNames();
           break;
 
         case "Quit":
@@ -83,24 +80,23 @@ function promptUser() {
           break;
       }
     }); //then
-}//function prompot user
+}//function prompt user
 
 function viewProducts(){
   connection.query("SELECT * FROM products", function (err, results) {
     if (err) throw err;
     console.log();
     displayProducts(results);
-});//Query
+  });//Query
 }//viewProducts
 
 /*****************************************
- * CTABLE
+ * CONSOLE TABLE
  *****************************************/
 function displayProducts(res){
-  //console.log("Position: " + res[i].billboard_rank + " || Song: " + res[i].song_name + " || Year: " + res[i].song_year);
   var values = [];
   for (var i = 0; i < res.length; i++) {
-    values[i] = [res[i].item_id, res[i].product_name, res[i].price, res[i].stock_quantity];
+    values[i] = [res[i].item_id, res[i].product_name, res[i].price.toFixed(decimalPlaces), res[i].stock_quantity];
   }//for
   console.log();
   console.table(['ID', 'Product', 'Price', "Quantity"], values);
@@ -115,7 +111,7 @@ function viewLowInventory(){
     if (err) throw err;
     console.log();
     displayProducts(results);
-});//Query
+  });//Query
 }//viewProducts
 
 function addQuantityPrompt(){
@@ -125,10 +121,10 @@ function addQuantityPrompt(){
     inquirer.prompt([
       {
         name: "item",
-        message: "\nEnter an item ID to add additional inventory?\n",
+        message: "Enter an item ID to add additional inventory?\n",
         type: "number",
         validate: function(item){
-          if(isNaN(item) === false && item > 0 && item < results.length){
+          if(isNaN(item) === false && item > 0 && item <= results[results.length-1].item_id && Number.isInteger(item)){
               return true;
           }
           else{
@@ -139,59 +135,45 @@ function addQuantityPrompt(){
       },//prompt
       {
         name: "quantity",
-        message: "\nHow many additional units would you like to add?\n",
+        message: "How many additional units would you like to add?\n",
         type: "number",
         validate: function(quantity){
-          //console.log("Item = "+item);
-          if(isNaN(quantity) === false && quantity >= 0){
+          if(isNaN(quantity) === false && quantity >= 0 && Number.isInteger(quantity)){
               return true;
           }
           else{
-            //console.log("Quantity not available in stock, please try again.");
               return false;
           }//else
         }
       }
     ]).then(function(response) {
-      //Examines user input and sends a callback function in as an argument.
-        //console.log("Name = "+response.name.toLowerCase());
-        //processInput(response.name.toLowerCase(), promptUser);
+      //Call Undate function and send the results of the MySQL query and inquirer response as arguments.
         updateInventory(results, response);
     });
   });//query
 }//addQuantityPrompt
 function updateInventory(results, response){
-  console.log("Item_ID = "+response.item);
-  console.log("Quantity = "+response.quantity);
-  //console.log("Available Quantity = "+results[response.item-1].stock_quantity);
-  //console.log("Price = "+results[response.item-1].price);
-  console.log("Item Name = "+results[response.item-1].product_name);
-  var productName = results[response.item-1].product_name;
-  //var price = results[response.item-1].price;
-  var userChoice = response.item;
+   var oldQuantity;
+   var productFound = false;
+   for (var i = 0; i < results.length; i++) {
+    if (results[i].item_id === response.item)
+    {
+      oldQuantity = results[i].stock_quantity;
+      productFound = true;
+    }
+  }//for
+
   var userQuantity = response.quantity;
-  var stockQuantity = results[response.item-1].stock_quantity;
-  var newQuantity = stockQuantity + userQuantity;
-  launchUpdate(userChoice, newQuantity)
-  //var cost =0; 
-      /*if (userQuantity <= stockQuantity){
-        //Update Database stock_quantity
-        newQuantity = stockQuantity - userQuantity;
-        //console.log("Update the quantity in products database.");
-        cost = price*userQuantity;
-        console.log(userQuantity +" "+productName+"'s at "+price+" = "+cost);
-        updateInventory(userChoice, newQuantity)
-        //figure out bill and output to user
-        //restart 
-      }
-      else
-      {
-        //Let user know not enough in stock
-        //Show products table and then loop back from start.
-        console.log("Quantity is not in stock.");
-        //displayProducts();
-        quitContinue();
-      }*/
+  var userChoice = response.item;
+  var newQuantity = oldQuantity + userQuantity;
+  if(productFound){
+    launchUpdate(userChoice, newQuantity)
+  }
+  else{
+    console.log("Item not found.\n");
+    promptUser();
+  }
+  
 }//updateInventory
 
 function launchUpdate(item, newQuantity){
@@ -209,16 +191,12 @@ function launchUpdate(item, newQuantity){
       if (error) throw error;
 
       console.log("\nInventory Updated successfully!\n");
-      //reset displayCtr after transaction is complete
-      //displayCtr = 0;
-      //displayProducts();
       promptUser();
     }
   );
 }//updateInventery
 
-function addRecordPrompt(){
-  //var syntax = /^[A-Za-z]+$/;
+function addRecordPrompt(results){
   var syntax = /^[a-zA-Z\s]*$/;
     inquirer
       .prompt([
@@ -235,27 +213,27 @@ function addRecordPrompt(){
           }
         }//validate
       },
-      {
-        name: "department",
-        type: "list",
-        message: "Select a department name to add to inventory?",
-        choices: [
-          "Home & Kitchen",
-          "Electronics",
-          "Toys & Games",
-          "Automative"]
+        {
+          name: "choice",
+          type: "list",
+          choices: function () {
+            var choiceArray = [];
+            for (var i = 0; i < results.length; i++) {
+              choiceArray.push(results[i].department_name);
+            }//for
+            return choiceArray;
+          },
+          message: "Select a department:"
         },
         {
           name: "price",
           message: "Enter the unit price.\n",
           type: "number",
           validate: function(price){
-            //console.log("Item = "+item);
             if(isNaN(price) === false && price >0){
                 return true;
             }
             else{
-              //console.log("Quantity not available in stock, please try again.");
                 return false;
             }//else
           }//validate
@@ -265,67 +243,66 @@ function addRecordPrompt(){
           message: "Enter the product quantity.\n",
           type: "number",
           validate: function(quantity){
-            //console.log("Item = "+item);
-            if(isNaN(quantity) === false && quantity >0){
+            if(isNaN(quantity) === false && quantity >0 && Number.isInteger(quantity)){
                 return true;
             }
             else{
-              //console.log("Quantity not available in stock, please try again.");
                 return false;
             }//else
           }//validate
         }
       ])
       .then(function(answer) {
-       //var productExists = false;
-        selectAll(answer);/*.then(function (productExists) {
-          // now you have your rows, you can see if there are <20 of them
-          console.log("Outside Connect Product Exists = " + productExists);
-          if (productExists) {
-            console.log("Product already exists, please perform and update instead.\n");
-          }
-
-          promptUser();
-        });*/
-        /*.catch((err) => setImmediate(() => { throw err; }));//SelectAll Promise */  
+        selectAll(answer); 
       });
-      /*.catch((err) => setImmediate(() => { throw err; }));//addRecordPrompt Promise*/
 }//addRecordPrompt
 
-function selectAll(answer){
+function selectAll(answer) {
   var query = "SELECT product_name FROM products";
   var productExists = false;
-        connection.query(query, function(err,res){
-          //Call reject on error states,
-          //Call launchInsert with results
+  connection.query(query, function (err, res) {
+    //Call reject on error states
+    if (err) {
+      throw err;
+    }
+
+    for (var i = 0; i < res.length; i++) {
+      if (res[i].product_name.toLowerCase() === answer.product.toLowerCase()) {
+        productExists = true;
+        console.log("\nThe product already exists in inventory.  Please update the item instead.\n")
+        promptUser();
+      }//if
+    }//for
+    //Call launchInsert with results only if product does not exist
+    if (!productExists) {
+      launchInsert(answer);
+    }
+  });//query
+}
+
+function launchInsert(answer) {
+  var query = "INSERT INTO products (product_name, department_name, price, stock_quantity) VALUES(?, ?, ?, ?)";
+  var values = [answer.product, answer.choice, answer.price, answer.quantity];
+  connection.query(query, values, function (err, res) {
+    if (err) throw err;
+    console.log("\nNumber of records inserted: " + res.affectedRows + "\n");
+    //Prompt user regardless if the db is updated or not.
+    promptUser();
+  });//query
+}//LaunchInsert
+
+function getDepartmentNames(){
+    //Query the department db for all department_names, to return as choices:
+    connection.query("SELECT department_name FROM departments", function(err, results) {
+       //Call reject on error states,
           if(err){
             throw err; 
           }
-          
-          for (var i = 0; i < res.length; i++){
-            if (res[i].product_name.toLowerCase() === answer.product.toLowerCase()){
-              productExists = true;
-              //console.log("\nResult = "+res[i].product_name+" Answer_Product = "+answer.product+" Inside Product Exists = "+productExists);
-              console.log("\nThe product already exists in inventory.  Please update the item instead.\n")
-              //Prompt user regardless if the db is updated or not.
-              promptUser();
-            }//if
-          }//for
-          if(!productExists){
-            launchInsert(answer);
+          try {
+            //Call addRecordPrompts and pass the results of the department query
+          addRecordPrompt(results);
+          } catch(err) {
+            console.log(err)
           }
-          
-        });//query
-}
-
-function launchInsert(answer){
-  var query = "INSERT INTO products (product_name, department_name, price, stock_quantity) VALUES(?, ?, ?, ?)";
-        var values = [answer.product, answer.department, answer.price, answer.quantity];
-  
-        connection.query(query, values, function(err, res) {
-          if (err) throw err;
-            console.log("\nNumber of records inserted: " + res.affectedRows+"\n");
-            //Prompt user regardless if the db is updated or not.
-          promptUser();
-        });//query
-}//LaunchInsert
+  });//Query
+}//function

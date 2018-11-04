@@ -28,7 +28,7 @@ VALUES
   ('OWL Diaries Box Set', 'Books', 20.00, 10),
   ('Lego City Advent Calender', 'Toys & Games', 20.00, 10),
   ('Alexa FireStick Remote', 'Electronics', 40.00, 20),
-  ('NOCO Battery Charger', 'Automative', 30.00, 20),
+  ('NOCO Battery Charger', 'Automotive', 30.00, 20),
   ('L.O.L. Surprise! Glam Doll', 'Toys & Games', 10.00, 20),
   ('Crayola LightUp Tracing Pad', 'Toys & Games', 25.00, 20);
 
