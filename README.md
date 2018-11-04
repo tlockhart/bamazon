@@ -12,7 +12,7 @@ In order to run the app, you will need to clone this repository and install all 
 2. [NPM](https://www.npmjs.com/get-npm)<br/>
 3. [Git & Git Bash](https://git-scm.com/downloads)<br/>
 4. [MySQL 5.7.24](https://dev.mysql.com/downloads/installer/)<br/>
-#NPM Modules Used:
+# NPM Modules Used
 1. CLI-Table
 2. Console.Table
 3. MySQL
