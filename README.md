@@ -21,7 +21,7 @@ In order to run the app, you will need to clone this repository and install all 
 1. Open Bash and Clone the bamazon repo
 2. Install all required technologies
 3. In Bash, change the current directory to the bamazon directory and install all modules from the package.json, using the following command:
-    1. install i [Enter]  
+    1. npm i [Enter]  
 4. Install MySQL Database Server on your machine
     1. Create MySQL login id and password
 5. In Bash, type the following command in the bamazon directory to create the bamazon database:
