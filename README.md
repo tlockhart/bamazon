@@ -23,13 +23,16 @@ In order to run the app, you will need to clone this repository and install all 
 3. In Bash, change the current directory to the bamazon directory and install all modules from the package.json, using the following command:
     1. npm i [Enter]  
 4. Install MySQL Database Server on your machine
-    1. Create MySQL login id and password
+    1. Create MySQL login ID and PASSWORD
 5. In Bash, type the following command in the bamazon directory to create the bamazon database:
-    1. mysql -u root -p < initDB.sql
-    2. type your MySQL password [ENTER]
+    1. mysql -u [ID] -p [ENTER]
+    2. [TYPE PASSWORD] [ENTER]
+    3. source initDB.sql [ENTER]
+    4. exit [ENTER] 
 # Execute Program
 1. In Bash, enter one of the following commands in the bamazon directory, to start the corresponding client.
     1. Customer CLI Client: node bamazonCustomer.js [ENTER]
+        1. [OPTIONAL] To run the Client type: npm start [ENTER]
     2. Manager CLI Client: node bamazonManager.js [ENTER]
     3. Supervisor CLI Client: node bamazonSupervisor.js [ENTER]
 # Use

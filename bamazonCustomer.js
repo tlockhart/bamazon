@@ -1,196 +1,209 @@
-/*****************************************************
+/* eslint-disable no-restricted-globals */
+/** ***************************************************
  *  REQUIREMENTS
- ****************************************************/
-var inquirer = require("inquirer");
-var mysql = require("mysql");
-var Table = require('cli-table');
-var decimalPlaces = 2;
+ *************************************************** */
+const inquirer = require('inquirer');
+const mysql = require('mysql');
+const Table = require('cli-table');
 
-/*****************************************************
+const decimalPlaces = 2;
+
+/** ***************************************************
  *  CONNECTION TO DATABASE
- ****************************************************/
-var connection = mysql.createConnection({
-    host: "localhost", //hostname on your computer
-  
-    // Your port; if not 3306
-    port: 3306, //Default mysql
-  
-    // Your username
-    user: "root",
-  
-    // Your password
-    password: "El1zab3th!",
-    database: "bamazon"
-  });
-   var query;
-  
-  //Make the connection, End the connection
-  connection.connect(function(err) {
-    if (err) {
-      throw err;
-    }
-    /***************/
-    //START PROGRAM
-    /***************/
-    //promptUser();
-    quitContinuePrompt();
+ *************************************************** */
+const connection = mysql.createConnection({
+  host: 'localhost', // hostname on your computer
 
-    /*****************
+  // Your port; if not 3306
+  port: 3306, // Default mysql
+
+  // Your username
+  user: 'root',
+
+  // Your password
+  password: 'El1zab3th!',
+  database: 'bamazon',
+});
+// let query;
+
+// Make the connection, End the connection
+connection.connect((err) => {
+  if (err) {
+    throw err;
+  }
+  /** ************ */
+  // START PROGRAM
+  /** ************ */
+  // promptUser();
+  quitContinuePrompt();
+
+  /** ***************
      * END CONNECTION
-     *****************/
-    ///CONNECTION ENDS WHEN USER QUITS:
-    //connection.end();
-    //process.exit(0);//0 means we are making a clean exit
-    /************************/
-  });
+     **************** */
+  // /CONNECTION ENDS WHEN USER QUITS:
+  // connection.end();
+  // process.exit(0);//0 means we are making a clean exit
+  /** ********************* */
+});
 
-  /*********************************************/
+/** ****************************************** */
 function displayProducts() {
   // query the database for all items being auctioned
-  connection.query("SELECT * FROM products", function (err, results) {
+  connection.query('SELECT * FROM products', (err, results) => {
     if (err) throw err;
-    //console.log(results);
+    // console.log(results);
 
     // instantiate cli-table
-    var table = new Table({
-      head: ['ID', 'Product', 'Price', 'Quantity']
-      , colWidths: [5, 35, 10, 10]
+    const table = new Table({
+      head: ['ID', 'Product', 'Price', 'Quantity'],
+      colWidths: [5, 35, 10, 10],
     });
 
     // table is an Array, so you can `push`, `unshift`, `splice` and friends
-    for (var i = 0; i < results.length; i++) {
+    for (let i = 0; i < results.length; i += 1) {
       table.push(
-        [results[i].item_id, results[i].product_name, results[i].price.toFixed(decimalPlaces), results[i].stock_quantity]
+        [
+          results[i].item_id,
+          results[i].product_name,
+          results[i].price.toFixed(decimalPlaces),
+          results[i].stock_quantity,
+        ],
       );
-    }//for
+    }// for
 
-      console.log(table.toString());
-      console.log();
+    console.log(table.toString());
+    console.log();
 
-  inquirer.prompt([
+    inquirer.prompt([
       {
-        name: "item",
-        message: "Enter an item ID to purchase?\n",
-        type: "number",
-        validate: function(item){
-          if(isNaN(item) === false && item > 0 && item <= results[results.length-1].item_id && Number.isInteger(item)){
-              return true;
+        name: 'item',
+        message: 'Enter an item ID to purchase?\n',
+        type: 'number',
+        validate(item) {
+          // eslint-disable-next-line no-restricted-globals
+          if (isNaN(item) === false
+            && item > 0
+            && item <= results[results.length - 1].item_id
+            && Number.isInteger(item)) {
+            return true;
           }
-          else{
-              return false;
-          }//else
-        }//validate
-      },//prompt
+
+          return false;
+          // else
+        }, // validate
+      }, // prompt
       {
-        name: "quantity",
-        message: "How many units would you like to purchase?\n",
-        type: "number",
-        validate: function(quantity){
-          if(isNaN(quantity) === false && quantity > 0 && Number.isInteger(quantity)){
-              return true;
+        name: 'quantity',
+        message: 'How many units would you like to purchase?\n',
+        type: 'number',
+        validate(quantity) {
+          if (isNaN(quantity) === false
+            && quantity > 0
+            && Number.isInteger(quantity)) {
+            return true;
           }
-          else{
-              return false;
-          }//else
-        }
-      }
-    ]).then(function(response) {
-      //Update Inventory send query results and inquirer response as arguments
-        updateInventory(results, response);
-    });//updateInventory(results);
-  });//query
-}//displayProducts
+
+          return false;
+          // else
+        },
+      },
+    ]).then((response) => {
+      // Update Inventory send query results and inquirer response as arguments
+      updateInventory(results, response);
+    });// updateInventory(results);
+  });// query
+}// displayProducts
 
 function quitContinuePrompt() {
   inquirer
     .prompt({
-      name: "selection",
-      type: "list",
-      message: "Would you like to make a purchase?",
+      name: 'selection',
+      type: 'list',
+      message: 'Would you like to make a purchase?',
       choices: [
-        "yes",
-        "no"]
+        'yes',
+        'no'],
     })
-    .then(function (answer) {
+    .then((answer) => {
       switch (answer.selection) {
-        case "yes":
+        case 'yes':
           displayProducts();
           break;
 
-        case "no":
-          process.exit(0);//0 means we are making a clean exit
+        case 'no':
+          process.exit(0);// 0 means we are making a clean exit
           break;
-      }//switch
-    }); //then
-}//function
+
+        default:
+      }// switch
+    }); // then
+}// function
 
 function updateInventory(results, response) {
-  var userChoice = response.item;
-  var userQuantity = response.quantity;
-  var price;
-  var productName;
-  var newQuantity;
-  var stockQuantity;
-  var productSales;
-  var cost = 0;
-  var productFound = false;
-  for (var i = 0; i < results.length; i++) {
+  const userChoice = response.item;
+  const userQuantity = response.quantity;
+  let price;
+  let productName;
+  let newQuantity;
+  let stockQuantity;
+  let productSales;
+  let cost = 0;
+  let productFound = false;
+  for (let i = 0; i < results.length; i += 1) {
     if (results[i].item_id === response.item) {
       stockQuantity = results[i].stock_quantity;
       productSales = results[i].product_sales;
       productName = results[i].product_name;
-      price = results[i].price;
+      const result = results[i];
+      // eslint-disable-next-line prefer-destructuring
+      price = result.price;
       productFound = true;
     }
-  }//for
+  }// for
   if (userQuantity <= stockQuantity) {
-    //Update Database stock_quantity
+    // Update Database stock_quantity
     newQuantity = stockQuantity - userQuantity;
     cost = price * userQuantity;
     if (productSales === null) {
       productSales = cost;
-    }
-    else
-      productSales = productSales + cost;
-    if(productFound){
-      //Figure out bill and output to customer
-      console.log(userQuantity + " " + productName + "/s at $" + price.toFixed(decimalPlaces) + "; Total Cost: $" + cost.toFixed(decimalPlaces));
-      launchUpdate(userChoice, newQuantity, productSales)
-    }
-    else{
-      console.log("\nItem not found.\n")
+    } else productSales += cost;
+    if (productFound) {
+      // Figure out bill and output to customer
+      console.log(`${userQuantity} ${productName}/s at $${price.toFixed(decimalPlaces)}; Total Cost: $${cost.toFixed(decimalPlaces)}`);
+      launchUpdate(userChoice, newQuantity, productSales);
+    } else {
+      console.log('\nItem not found.\n');
       quitContinuePrompt();
     }
-  }
-  else {
-    //Let user know not enough in stock
-    console.log("\nQuantity is not in stock.\n");
+  } else {
+    // Let user know not enough in stock
+    console.log('\nQuantity is not in stock.\n');
     quitContinuePrompt();
   }
-}//updateInventory
+}// updateInventory
 
-function launchUpdate(item, newQuantity, productSales){
-  var fieldsToUpdate =
-  {
+function launchUpdate(item, newQuantity, productSales) {
+  const fieldsToUpdate = {
     stock_quantity: newQuantity,
-    product_sales: productSales
-  },
-  whereClause =
-  {
-    item_id: item
+    product_sales: productSales,
+  };
+
+
+  const whereClause = {
+    item_id: item,
   };
   connection.query(
-    "UPDATE products SET ? WHERE ?",
+    'UPDATE products SET ? WHERE ?',
     [fieldsToUpdate, whereClause],
-    function(error) {
+    (error) => {
       if (error) throw error;
 
-      console.log("\nProduct/s purchased successfully!\n");
+      console.log('\nProduct/s purchased successfully!\n');
       quitContinuePrompt();
-    }
+    },
   );
-}//updateInventory
-/*****************************************************
+}// updateInventory
+/** ***************************************************
  *  RUN PROGRAMS
- ****************************************************/
-//node .\bamazonCustomer.js*/
+ *************************************************** */
+// node .\bamazonCustomer.js*/
